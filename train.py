@@ -6,7 +6,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Model Training')
     parser.add_argument('--model', type=str,
                         help='The used model type: MTL, single_event, single_distance, multi_classifier')
-    parser.add_argument('--running mode', type=str, help='running mode: train, test')
+    parser.add_argument('--running_mode', type=str, help='running mode: train, test')
     parser.add_argument('--GPU_device', default=True, type=bool, help='Whether to use GPU')
     parser.add_argument('--batch_size', default=32, type=int, help='The batch size for training or test')
     parser.add_argument('--epoch_num', default=40, type=int, help='The Training epoch')
