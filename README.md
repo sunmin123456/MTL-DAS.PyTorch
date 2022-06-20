@@ -8,9 +8,9 @@ This repository is being completed
 The proposed two level MTL model is the first multi-task learning approach in the field of fiber-optical distributed acoustic sensor (DAS) for threatening source monitoring. In the hierarchical network, the shared feature extractor in the backbone network improves the feature extraction efficiency by mining data correlations of different tasks, then different higher-level features are selected further in two task-specific subnetworks using separate objective functions to achieve event type recognition and localization respectively.
 
 Field tests proves that the recognition accuracy of event type, the localization error of the radial distance, and the robustness against noises are all better than common single-task networks and the single-level multi-classifiers, while the computational complexity reduces to 67.8% and 19.8% of them. It potentially provides a real-time multi-task processing solution for large-scale or super large-scale DAS array in all kinds of land or marine monitoring applications with fiber IoT.
-![overall](figures/overall.jpg)
 
-![model](figures/model.jpg)
+![](https://github.com/wang678/MTL-DAS.PyTorch/blob/main/figures/model.png)
+
 
 ## Environmnet
 ```
