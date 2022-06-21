@@ -33,7 +33,7 @@ tqdm~=4.61.2
 
 ## Dataset 
 We provide the field multi-task dataset collected with DAS.
-The preprocessed dataset and its description are available in [Google Drive](). The original dataset will be uploaded soon.
+The preprocessed dataset and its description are available in [Google Drive](https://drive.google.com/file/d/1BQTKkCxvTcNI_Uft5kXlhxVvLMOEYYiD/view?usp=sharing). The original dataset will be uploaded soon.
 
 ## Training
 Please execute `train.py` for model training and validation, using the command
