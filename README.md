@@ -1,8 +1,6 @@
 # MTL-DAS.PyTorch
 This repository contains the source code of a two level multi-task learning (MTL) model for event type recognition and radial distane discrimination with distributed acoustic sensing (DAS) in the paper: A Highly Efficient Synchronous Event Recognition and 2-D Localization with a Multi-task Learning Network in Distributed Optical-fiber Ground Listening Array.
 
-This repository is being completed.
-
 
 ## Introduction
 The proposed two level MTL model is the first multi-task learning approach in the field of fiber-optical distributed acoustic sensor (DAS) for threatening source monitoring. In the hierarchical network, the shared feature extractor in the backbone network improves the feature extraction efficiency by mining data correlations of different tasks, then different higher-level features are selected further in two task-specific subnetworks using separate objective functions to achieve event type recognition and localization respectively.
