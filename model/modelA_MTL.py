@@ -1,17 +1,5 @@
-import argparse
-import datetime
-import glob
-import io
-import sys
-import numpy as np
-import matplotlib.pyplot as plt
 import torch.utils.data
-from ptflops import get_model_complexity_info
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
-from torch import optim
-from torch.autograd import Variable
 import torch
-import os
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -101,25 +89,25 @@ class MTL_Net(nn.Module):
         """Define the task-specific networks"""
         # Attention mask generator
         self.att_mask_generator1 = nn.ModuleList(
-            [self.att_generator(self.ch[1], self.ch[1] // 2, self.ch[1]) for _ in self.tasks])
+            [att_generator(self.ch[1], self.ch[1] // 2, self.ch[1]) for _ in self.tasks])
         self.att_mask_generato2 = nn.ModuleList(
-            [self.att_generator(2 * self.ch[2], self.ch[2] // 2, self.ch[2]) for _ in self.tasks])
+            [att_generator(2 * self.ch[2], self.ch[2] // 2, self.ch[2]) for _ in self.tasks])
         self.att_mask_generator3 = nn.ModuleList(
-            [self.att_generator(2 * self.ch[3], self.ch[3] // 2, self.ch[3]) for _ in self.tasks])
+            [att_generator(2 * self.ch[3], self.ch[3] // 2, self.ch[3]) for _ in self.tasks])
         self.att_mask_generator4 = nn.ModuleList(
-            [self.att_generator(2 * self.ch[4], self.ch[4] // 2, self.ch[4]) for _ in self.tasks])
+            [att_generator(2 * self.ch[4], self.ch[4] // 2, self.ch[4]) for _ in self.tasks])
 
         # Define the output layer 1.1-1.3, 2.1-2.3
         self.output_layer1 = nn.ModuleList(
             [nn.Sequential(conv3x3(self.ch[1], self.ch[2], stride=1), nn.BatchNorm2d(self.ch[2]), nn.ReLU(inplace=True))
              for _ in self.tasks])
 
-        self.output_layer12 = nn.ModuleList(
+        self.output_layer2 = nn.ModuleList(
             [nn.Sequential(conv3x3(self.ch[2], self.ch[3], stride=1), nn.BatchNorm2d(self.ch[3]),
                            nn.ReLU(inplace=True)) for _ in
              self.tasks])
 
-        self.output_layer13 = nn.ModuleList(
+        self.output_layer3 = nn.ModuleList(
             [nn.Sequential(conv3x3(self.ch[3], self.ch[4], stride=1), nn.BatchNorm2d(self.ch[4]),
                            nn.ReLU(inplace=True)) for _ in
              self.tasks])
@@ -150,10 +138,10 @@ class MTL_Net(nn.Module):
         shared_blocks.append(self.resblock7(shared_blocks[-1]))
         shared_blocks.append(self.resblock8(shared_blocks[-1]))
 
-        a_1_mask = [att_i(shared_blocks[0]) for att_i in
-                    self.att_mask_generator1]  # Generate task specific attention map
-        a_1 = [a_1_mask_i * shared_blocks[1] for a_1_mask_i in
-               a_1_mask]  # Apply task specific attention map to shared features
+        # Generate task specific attention map
+        a_1_mask = [att_i(shared_blocks[0]) for att_i in self.att_mask_generator1]
+        # Apply task specific attention map to shared features
+        a_1 = [a_1_mask_i * shared_blocks[1] for a_1_mask_i in a_1_mask]
         a_1 = [self.down_sampling(encoder_block(a_1_i)) for a_1_i, encoder_block in
                # Obtain the output of the attention module
                zip(a_1, self.output_layer1)]
@@ -162,13 +150,13 @@ class MTL_Net(nn.Module):
                     zip(a_1, self.att_mask_generato2)]
         a_2 = [a_2_mask_i * shared_blocks[3] for a_2_mask_i in a_2_mask]
         a_2 = [self.down_sampling(encoder_block(a_2_i)) for a_2_i, encoder_block in
-               zip(a_2, self.output_layer12)]
+               zip(a_2, self.output_layer2)]
 
         a_3_mask = [att_i(torch.cat((shared_blocks[4], a_2_i), dim=1)) for a_2_i, att_i in
                     zip(a_2, self.att_mask_generator3)]
         a_3 = [a_3_mask_i * shared_blocks[5] for a_3_mask_i in a_3_mask]
         a_3 = [self.down_sampling(encoder_block(a_3_i)) for a_3_i, encoder_block in
-               zip(a_3, self.output_layer12)]
+               zip(a_3, self.output_layer3)]
 
         a_4_mask = [att_i(torch.cat((shared_blocks[6], a_3_i), dim=1)) for a_3_i, att_i in
                     zip(a_3, self.att_mask_generator4)]
@@ -184,6 +172,3 @@ class MTL_Net(nn.Module):
         pred2 = F.log_softmax(pred2, dim=1)
 
         return pred1, pred2
-
-
-

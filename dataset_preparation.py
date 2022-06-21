@@ -9,7 +9,6 @@ from torch import optim
 from torch.autograd import Variable
 import torch
 import os
-# 训练/验证过程
 import torch.nn as nn
 from tqdm import tqdm
 import scipy.io as io
@@ -82,46 +81,22 @@ class DataCollector:
 
 
 def add_gaussian(signal, SNR=8):
-    np.random.seed(1)
-    SNR = SNR
-    noise = np.random.randn(len(signal))  # 产生N(0,1)噪声数据
-    noise = noise - np.mean(noise)  # 均值为0
-    signal_power = np.linalg.norm(signal - signal.mean()) ** 2 / len(signal)  # 此处是信号的std**2
-    noise_variance = signal_power / np.power(10, (SNR / 10))  # 此处是噪声的std**2
-    noise = (np.sqrt(noise_variance) / np.std(noise)) * noise  ##此处是噪声的std**2
-    signal_noise = noise + signal
-
-    Ps = (np.linalg.norm(signal - signal.mean())) ** 2  # signal power
-    Pn = (np.linalg.norm(signal - signal_noise)) ** 2  # noise power
-    snr = 10 * np.log10(Ps / Pn)
-
-    # print(Ps)
-    # print(Pn)
-    # print(snr)
-    return signal_noise
-
     # ————————————————
     # 版权声明：本文为CSDN博主「迪普达克范特西」的原创文章，遵循CC
     # 4.0
     # BY - SA版权协议，转载请附上原文出处链接及本声明。
     # 原文链接：https://blog.csdn.net/sinat_24259567/article/details/93889547
-
-
-# 给信号加入指定功率的噪声
-def add_gaussian_refer(signal, SNR=10, Pn_origin=0.02, Pn=0.2):
     np.random.seed(1)
     SNR = SNR
-    noise = np.random.randn(len(signal))  # 产生N(0,1)噪声数据
-    noise = noise - np.mean(noise)  # 均值为0
-    signal_power = np.linalg.norm(signal - signal.mean()) ** 2 / len(signal)  # 此处是信号的std**2
-    # noise_variance = signal_power / np.power(10, (SNR / 10))  # 此处是噪声的std**2 或噪声功率
-    noise_variance = Pn
-
-    noise = (np.sqrt(noise_variance) / np.std(noise)) * noise  ##此处是噪声的std**2
+    noise = np.random.randn(len(signal))
+    noise = noise - np.mean(noise)
+    signal_power = np.linalg.norm(signal - signal.mean()) ** 2 / len(signal)
+    noise_variance = signal_power / np.power(10, (SNR / 10))
+    noise = (np.sqrt(noise_variance) / np.std(noise)) * noise
     signal_noise = noise + signal
 
-    Ps = (np.linalg.norm(signal - signal.mean())) ** 2 / len(signal)  # signal power
-    Pn = (np.linalg.norm(signal - signal_noise)) ** 2 / len(signal)  # noise power
+    Ps = (np.linalg.norm(signal - signal.mean())) ** 2
+    Pn = (np.linalg.norm(signal - signal_noise)) ** 2
     snr = 10 * np.log10(Ps / Pn)
 
     # print(Ps)
@@ -130,7 +105,7 @@ def add_gaussian_refer(signal, SNR=10, Pn_origin=0.02, Pn=0.2):
     return signal_noise
 
 
-class Dataset_mat_MTL():  # 修改这个函数
+class Dataset_mat_MTL():
     '''
     example:
     get_fftmap_dataset(dataset_dir=r'C:/dataset\0324qiaoji/')
@@ -140,8 +115,6 @@ class Dataset_mat_MTL():  # 修改这个函数
         print(label)
     '''
 
-    # 把is_test改成True，使用全训练集
-    # 0.17647
     def __init__(self, dataset_dir_striking, dataset_dir_excavating, testRate=0.17647, random_state=1,
                  category_dir_list0324=None,
                  category_dir_listwajue=None, ram=False, multi_categories=False, is_test=False, fold_index=None):
@@ -155,7 +128,6 @@ class Dataset_mat_MTL():  # 修改这个函数
         if category_dir_listwajue is None:
             category_dir_listwajue = dataCollector_excavating.get_all_categorys()
 
-        # 生成样本-标签对
         self.matpathListTrain = []
         self.labelListTrain = []
         self.matpathListTest = []
@@ -164,27 +136,27 @@ class Dataset_mat_MTL():  # 修改这个函数
         for category1 in category_dir_list0324:
             filenum = dataCollector_striking.get_fileFullnameList_by_category(category1)
 
-            if is_test:  # 测试
+            if is_test:
 
                 for filepath in filenum:
                     self.matpathListTrain.append(filepath)
-                    self.labelListTrain.append([int(category1[:-1]), 0])  # 0表示0324，0表示0m
+                    self.labelListTrain.append([int(category1[:-1]), 0])
 
                 for filepath in filenum:
                     self.matpathListTest.append(filepath)
-                    self.labelListTest.append([int(category1[:-1]), 0])  # 0表示0324，0表示0m
+                    self.labelListTest.append([int(category1[:-1]), 0])
 
 
-            else:  # 训练
+            else:
 
                 if fold_index is None:
                     train_filepath_one_category, test_filepath_one_category = train_test_split(filenum,
                                                                                                test_size=testRate,
                                                                                                random_state=random_state)
 
-                else:  # 采用5折交叉的方法
+                else:  # five-fold cross validation
 
-                    KF = KFold(n_splits=5, shuffle=True, random_state=1)
+                    KF = KFold(n_splits=5, shuffle=True, random_state=random_state)
                     train_filepath_one_category_list = []
                     test_filepath_one_category_list = []
                     for train_index, test_index in KF.split(filenum):
@@ -195,33 +167,33 @@ class Dataset_mat_MTL():  # 修改这个函数
 
                 for filepath in train_filepath_one_category:
                     self.matpathListTrain.append(filepath)
-                    self.labelListTrain.append([int(category1[:-1]), 0])  # 0表示0324，0表示0m
+                    self.labelListTrain.append([int(category1[:-1]), 0])
 
                 for filepath in test_filepath_one_category:
                     self.matpathListTest.append(filepath)
-                    self.labelListTest.append([int(category1[:-1]), 0])  # 0表示0324，0表示0m
+                    self.labelListTest.append([int(category1[:-1]), 0])
 
         for category1 in category_dir_listwajue:
             filenum = dataCollector_excavating.get_fileFullnameList_by_category(category1)
 
-            if is_test:  # 测试
+            if is_test:
 
                 for filepath in filenum:
                     self.matpathListTrain.append(filepath)
-                    self.labelListTrain.append([int(category1[:-1]), 1])  # 0表示0324，0表示0m
+                    self.labelListTrain.append([int(category1[:-1]), 1])
 
                 for filepath in filenum:
                     self.matpathListTest.append(filepath)
-                    self.labelListTest.append([int(category1[:-1]), 1])  # 0表示0324，0表示0m
+                    self.labelListTest.append([int(category1[:-1]), 1])
 
-            else:  # 训练
+            else:
 
                 if fold_index is None:
                     train_filepath_one_category, test_filepath_one_category = train_test_split(filenum,
                                                                                                test_size=testRate,
                                                                                                random_state=random_state)
                 else:
-                    KF = KFold(n_splits=5, shuffle=True, random_state=1)
+                    KF = KFold(n_splits=5, shuffle=True, random_state=random_state)
                     train_filepath_one_category_list = []
                     test_filepath_one_category_list = []
                     for train_index, test_index in KF.split(filenum):
@@ -233,11 +205,11 @@ class Dataset_mat_MTL():  # 修改这个函数
 
                 for filepath in train_filepath_one_category:
                     self.matpathListTrain.append(filepath)
-                    self.labelListTrain.append([int(category1[:-1]), 1])  # 0表示0324，0表示0m
+                    self.labelListTrain.append([int(category1[:-1]), 1])
 
                 for filepath in test_filepath_one_category:
                     self.matpathListTest.append(filepath)
-                    self.labelListTest.append([int(category1[:-1]), 1])  # 0表示0324，0表示0m
+                    self.labelListTest.append([int(category1[:-1]), 1])
 
         self.dataset = {}
 
@@ -267,48 +239,27 @@ class Dataset_mat_MTL():  # 修改这个函数
             self.dataset['val'] = DatasetDisk(self.matpathListTest, self.labelListTest)
 
 
-# 数据处理程序
 def data_process(mat):
-    # 降采样
-    # mat = mat[:, :, np.arange(0, 63, 2)]
-    # mat = mat[np.arange(0, 40, 2), :,:]
-    # mat = mat[:, np.arange(0, 50, 2),:]
-
-    # 降采样，用于原始时空矩阵
-    mat = mat[:, np.arange(0, 500, 2)]
-
-    # 加噪
-    for i in range(100):
-        mat[i] = add_gaussian_refer(mat[i], Pn=0.045)  # -10dB  原本0.015
-
-    # 0-1归一化
-    # mat = (mat - np.min(mat)) / (
-    #         np.max(mat) - np.min(mat))
-
-    # # 取对数
-    # mat = np.log(mat + 0.001)
-    # # 0-1归一化
-    # mat = (mat - np.min(mat)) / (
-    #         np.max(mat) - np.min(mat))
+    # add noise
+    # for i in range(100):
+    #     mat[i] = add_gaussian(mat[i], Pn=0.045)
 
     mat = mat[np.newaxis, :]
     mat = mat.astype(np.float32)
     return mat
 
 
-class Datasetram(torch.utils.data.Dataset):  # 修改这个函数
+class Datasetram(torch.utils.data.Dataset):
     def __init__(self, mat_list, label_list, key='data', paper_single=False):
         assert len(mat_list) == len(label_list)
 
         self.mat_list = mat_list
         self.label_list = label_list
         self.key = key
-        self.mat_file_list = []  # 一个很大的矩阵，用来存储mat文件
+        self.mat_file_list = []
         self.paper_single = paper_single
 
-        # 读取数据
         for i in tqdm(range(len(self.mat_list))):
-            # 这里只将mat文件放到内存
             mat = io.loadmat(self.mat_list[i])[self.key]
             mat = data_process(mat)
             self.mat_file_list.append(mat)
@@ -321,7 +272,6 @@ class Datasetram(torch.utils.data.Dataset):  # 修改这个函数
             return self.mat_file_list[item], self.label_list[item]
         return self.mat_file_list[item], self.label_list[item][0], self.label_list[item][1]
 
-    # 12.26新增方法
     def get_name_label_csv(self, savedir='./name_label.csv', paper_single=False):
         import pandas as pd
 
@@ -347,7 +297,7 @@ class Datasetram(torch.utils.data.Dataset):  # 修改这个函数
         csv_table.to_csv(savedir, encoding='gbk')
 
 
-class DatasetDisk(torch.utils.data.Dataset):  # 修改这个函数
+class DatasetDisk(torch.utils.data.Dataset):
     def __init__(self, mat_list, label_list, key='data', paper_single=False):
         assert len(mat_list) == len(label_list)
         self.mat_list = mat_list
@@ -369,7 +319,6 @@ class DatasetDisk(torch.utils.data.Dataset):  # 修改这个函数
 
         return mat, distance_label, event_label
 
-    # 12.26新增方法
     def get_name_label_csv(self, savedir='./name_label.csv', paper_single=False):
         import pandas as pd
 
@@ -393,13 +342,3 @@ class DatasetDisk(torch.utils.data.Dataset):  # 修改这个函数
             }
         csv_table = pd.DataFrame(csv_dict)
         csv_table.to_csv(savedir, encoding='gbk')
-
-
-if __name__ == '__main__':
-    dataset_dir0324 = r"\\121.48.161.226\kb208datapool\LabFiles\users\wyf\数据集-偶尔用\空间时频图数据集（0324敲击）/"
-    dataset_dirwajue = r"\\121.48.161.226\kb208datapool\LabFiles\users\wyf\数据集-偶尔用\空间时频图（归一化同态滤波挖掘）/"
-
-    dataset_MTL = Dataset_mat_MTL(dataset_dir_striking=dataset_dir0324, dataset_dir_excavating=dataset_dirwajue)
-
-    for data in dataset_MTL.dataset['train']:
-        pass

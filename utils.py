@@ -58,15 +58,15 @@ def draw_confusion_matrix(confusion_matrix, leibie1, font_scale=2.5, y_offset=0.
     df.index = leibie1
     # sns.set(font="simhei")
     h = sns.heatmap(df, annot=True, ax=ax, cmap="OrRd", annot_kws={'size': 16, 'weight': 'bold'}, cbar=False,
-                    fmt="d")  # 画热力图
-    # cb = h.figure.colorbar(h.collections[0])  # 显示colorbar
-    # cb.ax.tick_params(labelsize=16)  # 设置colorbar刻度字体大小。
+                    fmt="d")
+    # cb = h.figure.colorbar(h.collections[0])
+    # cb.ax.tick_params(labelsize=16)
 
     plt.xticks(np.arange(y_offset, len(leibie1) + y_offset, 1), leibie1, fontsize=16, weight='bold')
     plt.yticks(np.arange(y_offset, len(leibie1) + y_offset, 1), leibie1, fontsize=16, weight='bold')
 
-    ax.set_xlabel('Predicted Value', fontsize=16, weight='bold')  # x轴
-    ax.set_ylabel('True Value', fontsize=16, weight='bold')  # y轴
+    ax.set_xlabel('Predicted Value', fontsize=16, weight='bold')
+    ax.set_ylabel('True Value', fontsize=16, weight='bold')
     plt.title(title1)
     plt.tight_layout()
     plt.savefig(savepath)
@@ -104,12 +104,12 @@ def main_process(model_type='MTL', is_test=False, pth_file=None, GPU_device=True
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # backup the source files
-    if not os.path.exists(save_dir + 'src'):
-        os.makedirs(save_dir + 'src')
-    py_file = glob.glob(r'./*.py')
-    for filename in py_file:
-        copyfile(filename, save_dir + 'src/' + os.path.basename(filename))
+    # # backup the source files
+    # if not os.path.exists(save_dir + 'src'):
+    #     os.makedirs(save_dir + 'src')
+    # py_file = glob.glob(r'./*.py')
+    # for filename in py_file:
+    #     copyfile(filename, save_dir + 'src/' + os.path.basename(filename))
 
     # Save the console output to file
     log1 = Logger('console output.log', path=save_dir)
@@ -124,15 +124,19 @@ def main_process(model_type='MTL', is_test=False, pth_file=None, GPU_device=True
     if GPU_device == True:
         model.cuda()
 
-    # -Compute the model complexity
-    macs, params = get_model_complexity_info(model, (1, 100, 250), as_strings=False,
-                                             print_per_layer_stat=False, verbose=True, ost=log1)
-    print('{:<30}  {:<8}'.format('MACs: ', macs))
-    print('{:<30}  {:<8}'.format('Number of parameters: ', params))
+    # # -Compute the model complexity
+    # macs, params = get_model_complexity_info(model, (1, 100, 250), as_strings=False,
+    #                                          print_per_layer_stat=False, verbose=True, ost=log1)
+    # print('{:<30}  {:<8}'.format('MACs: ', macs))
+    # print('{:<30}  {:<8}'.format('Number of parameters: ', params))
 
     base_lr = 0.001
     optimizer = optim.Adam(model.parameters(), lr=base_lr, weight_decay=0.00001)
-    criterion = torch.nn.NLLLoss()  # criterion = torch.nn.CrossEntropyLoss() if Softmax are not used in the model
+
+    if model_type == 'multi_classifier':
+        criterion = torch.nn.CrossEntropyLoss()
+    else:
+        criterion = torch.nn.NLLLoss()
 
     if is_test:
         dataset_striking = test_set_striking
@@ -155,13 +159,23 @@ def main_process(model_type='MTL', is_test=False, pth_file=None, GPU_device=True
         trainer_MTL(model=model, data_loader=dataloader1, epoch_num=epoch_num + 1, start_epoch=0, optimizer=optimizer,
                     criterion=criterion, use_gpu=GPU_device, save_dir=save_dir, save_output=True, is_test=is_test)
     elif model_type == 'single_distance':
-        trainer_single_task(model=model, data_loader=dataloader1, epoch_num=epoch_num + 1, start_epoch=0, optimizer=optimizer,
-                    criterion=criterion, use_gpu=GPU_device, save_dir=save_dir, save_output=True, is_test=is_test, task='distance')
+        trainer_single_task(model=model, data_loader=dataloader1, epoch_num=epoch_num + 1, start_epoch=0,
+                            optimizer=optimizer,
+                            criterion=criterion, use_gpu=GPU_device, save_dir=save_dir, save_output=True,
+                            is_test=is_test, task='distance')
     elif model_type == 'single_event':
-        trainer_single_task(model=model, data_loader=dataloader1, epoch_num=epoch_num + 1, start_epoch=0, optimizer=optimizer,
-                    criterion=criterion, use_gpu=GPU_device, save_dir=save_dir, save_output=True, is_test=is_test, task='event')
+        trainer_single_task(model=model, data_loader=dataloader1, epoch_num=epoch_num + 1, start_epoch=0,
+                            optimizer=optimizer,
+                            criterion=criterion, use_gpu=GPU_device, save_dir=save_dir, save_output=True,
+                            is_test=is_test, task='event')
 
-
+    elif model_type == 'multi_classifier':
+        trainer_multiClassifier(model=model, data_loader=dataloader1, epoch_num=epoch_num + 1, start_epoch=0,
+                                optimizer=optimizer,
+                                criterion=criterion, use_gpu=GPU_device, save_dir=save_dir, save_output=True,
+                                is_test=is_test)
+    else:
+        raise ValueError
 
     # Save the training lines
     if not is_test:
@@ -170,8 +184,21 @@ def main_process(model_type='MTL', is_test=False, pth_file=None, GPU_device=True
         for linename in linelist:
             line = np.load(save_dir + linename + '.npy')
             plt.figure()
-            plt.plot(line[0], label='distance')
-            plt.plot(line[1], label='event')
+
+            if model_type == 'MTL':
+                plt.plot(line[0], label='distance')
+                plt.plot(line[1], label='event')
+            elif model_type == 'single_distance' or model_type == 'single_event':
+                plt.plot(line[0], label=model_type)
+            elif model_type == 'multi_classifier':
+                if linename == 'trainLossLine' or linename == 'testLossLine':
+                    plt.plot(line[0], label=model_type)
+                else:
+                    plt.plot(line[0], label='distance')
+                    plt.plot(line[1], label='event')
+            else:
+                raise ValueError
+
             plt.legend()
             plt.savefig(save_dir + linename + '.png')
             plt.close()
@@ -188,7 +215,7 @@ def main_process(model_type='MTL', is_test=False, pth_file=None, GPU_device=True
                 draw_confusion_matrix(confusion_matrix=mat1, leibie1=leibei_distance, figsize=(6.5, 6),
                                       savepath=save_dir + '/confusion matrix distance.svg')
             elif len(mat1[0]) == 2:
-                draw_confusion_matrix(confusion_matrix=mat1, leibie1=leibie_event, figsize=(2.8, 2.8),
+                draw_confusion_matrix(confusion_matrix=mat1, leibie1=leibie_event, figsize=(4.5, 4),
                                       savepath=save_dir + '/confusion matrix event.svg')
             else:
                 raise ValueError
@@ -463,7 +490,7 @@ def trainer_single_task(model, epoch_num, start_epoch, optimizer, criterion, dat
 
             testAccLine[0] = np.append(testAccLine[0], acc1)
             testAccLine[1] = np.append(testAccLine[1], acc1)
-            print("{}\nepoch:{}  Validation Accuracy: distance:{}  event:{}".format("*" * 50, epoch, acc1, acc2))
+            print("{}\nepoch:{}  Validation Accuracy: ".format("*" * 50, epoch, acc1))
 
             label_lst[0] = [int(x) for x in label_lst[0]]
             pred_lst[0] = [int(x) for x in pred_lst[0]]
@@ -540,7 +567,7 @@ def trainer_single_task(model, epoch_num, start_epoch, optimizer, criterion, dat
                 acc_sum100[0] += float(torch.sum((pred1 == label_single)).data) / len(pred1)
                 # acc_sum100[1] += float(torch.sum((pred2 == event_label)).data) / len(pred2)
 
-                loss_sum100[0] += loss[0].cpu().data.item() / len(pred1)
+                loss_sum100[0] += loss.cpu().data.item() / len(pred1)
                 # loss_sum100[1] += loss[1].cpu().data.item() / len(pred2)
 
                 if (batch_cnt + 1) % 100 == 0:
@@ -569,10 +596,14 @@ def trainer_single_task(model, epoch_num, start_epoch, optimizer, criterion, dat
 
 def trainer_multiClassifier(model, epoch_num, start_epoch, optimizer, criterion, data_loader, save_dir,
                             use_gpu=True, save_output=False, is_test=False):
-    hash_list = [[i % 16, i // 16] for i in
-                 range(32)]  # Establish mapping from multi-categories to categories of two tasks
+    # Establish mapping from multi-categories to categories of two tasks
+    hash_list = [[i % 16, i // 16] for i in range(32)]
     start_time = datetime.datetime.now()
-    print('Start Training：{}'.format(start_time))
+
+    if is_test:
+        print('Start Test：{}'.format(start_time))
+    else:
+        print('Start Training：{}'.format(start_time))
 
     def adjust_lr(optimizer):
         for param in optimizer.param_groups:
@@ -582,7 +613,7 @@ def trainer_multiClassifier(model, epoch_num, start_epoch, optimizer, criterion,
     LossLine = [[], []]
     AccLine = [[], []]
     testAccLine = [[], []]
-    testLossLine = [[], []]  #
+    testLossLine = [[], []]
     acc_sum100 = [0, 0]
     loss_sum100 = [0, 0]
 
@@ -616,10 +647,10 @@ def trainer_multiClassifier(model, epoch_num, start_epoch, optimizer, criterion,
 
                 out1 = model(valX)
                 out1_pred = torch.max(out1, 1)[1]
-                l1 = criterion(out1, mix_label.long())  #
+                l1 = criterion(out1, mix_label.long())
 
-                testloss[0] += l1.cpu().data  #
-                testloss[1] += l1.cpu().data  #
+                testloss[0] += l1.cpu().data
+                testloss[1] += l1.cpu().data
 
                 # - Transform multi-categories to categories of two tasks
                 pred1 = torch.zeros(out1_pred.shape[0])
@@ -680,7 +711,7 @@ def trainer_multiClassifier(model, epoch_num, start_epoch, optimizer, criterion,
 
                 if not is_test:
                     np.save(save_dir + '/testAccLine', testAccLine)
-                    np.save(save_dir + '/testLossLine', testLossLine)  #
+                    np.save(save_dir + '/testLossLine', testLossLine)
 
                 if acc1 >= 0.95:
                     torch.save(model.state_dict(), os.path.join(save_dir,

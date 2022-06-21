@@ -3,8 +3,8 @@ import argparse
 from utils import main_process
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Model Training')
-    parser.add_argument('--model', type=str,
+    parser = argparse.ArgumentParser(description='Model test')
+    parser.add_argument('--model', type=str, default='MTL',
                         help='The used model type: MTL, single_event, single_distance, multi_classifier')
     parser.add_argument('--running_mode', type=str, help='running mode: train, test')
     parser.add_argument('--GPU_device', default=True, type=bool, help='Whether to use GPU')
@@ -20,7 +20,7 @@ if __name__ == '__main__':
                         help='Path of Training and validation dataset for striking event')
     parser.add_argument('--trainVal_set_excavating', default='./dataset/excavating_train', type=str,
                         help='Path of Training and validation dataset for excavating event')
-    parser.add_argument('--test_set_striking', default='./dataset/striking_test', type=str,
+    parser.add_argument('--test_set_striking', default='E:./dataset/striking_test', type=str,
                         help='Path of Training and validation dataset for striking event')
     parser.add_argument('--test_set_excavating', default='./dataset/excavating_test', type=str,
                         help='Path of Training and validation dataset for excavating event')
@@ -30,12 +30,10 @@ if __name__ == '__main__':
     main_process(model_type=args.model,
                  GPU_device=args.GPU_device,
                  is_test=True,
-                 pth_file=None,
+                 pth_file=args.model_path,
                  log_savedir=args.output_savedir,
                  batch_size=args.batch_size,
                  dataset_ram=args.dataset_ram,
-                 test_set_striking='./dataset/striking_test',
-                 test_set_excavating='./dataset/excavating_test',
+                 test_set_striking=args.test_set_striking,
+                 test_set_excavating=args.test_set_excavating
                  )
-
-

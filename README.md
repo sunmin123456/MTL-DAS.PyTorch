@@ -9,19 +9,16 @@ The proposed two level MTL model is the first multi-task learning approach in th
 
 Field tests proves that the recognition accuracy of event type, the localization error of the radial distance, and the robustness against noises are all better than common single-task networks and the single-level multi-classifiers, while the computational complexity reduces to 67.8% and 19.8% of them. It potentially provides a real-time multi-task processing solution for large-scale or super large-scale DAS array in all kinds of land or marine monitoring applications with fiber IoT.
 
-
 ![](figures/overall.png)
-<center>Applications of DAS with MTL model</center>
+
 <br/>
 
 ![](figures/model.png)
-<center>
-Model structure
-</center>
+
 
 ## Environmnet
 ```
-Python~=3.8.0
+Python~=3.8.10
 numpy~=1.21.0
 matplotlib~=3.3.4
 torch~=1.8.1
@@ -37,7 +34,8 @@ tqdm~=4.61.2
 ```
 
 ## Dataset 
-We are collating the whole dataset and it will be uploaded soon.
+We provide the field multi-task dataset collected with DAS.
+The preprocessed dataset and its description are available in [Google Drive](). The original dataset will be uploaded soon.
 
 ## Training
 Please execute `train.py` for model training and validation, using the command

@@ -1,4 +1,3 @@
-
 import torch.utils.data
 import torch
 import torch.nn as nn
@@ -56,7 +55,7 @@ class Single_Task_Net(nn.Module):
     Implementation of the Single Task network (Model B in the paper)
     """
 
-    def __init__(self,task='distance'):
+    def __init__(self, task='distance'):
         super(Single_Task_Net, self).__init__()
         self.res_num = 8
         self.first_ch = 16
@@ -89,25 +88,25 @@ class Single_Task_Net(nn.Module):
         """Define the task-specific networks"""
         # Attention mask generator
         self.att_mask_generator1 = nn.ModuleList(
-            [self.att_generator(self.ch[1], self.ch[1] // 2, self.ch[1]) for _ in self.tasks])
+            [att_generator(self.ch[1], self.ch[1] // 2, self.ch[1]) for _ in self.tasks])
         self.att_mask_generato2 = nn.ModuleList(
-            [self.att_generator(2 * self.ch[2], self.ch[2] // 2, self.ch[2]) for _ in self.tasks])
+            [att_generator(2 * self.ch[2], self.ch[2] // 2, self.ch[2]) for _ in self.tasks])
         self.att_mask_generator3 = nn.ModuleList(
-            [self.att_generator(2 * self.ch[3], self.ch[3] // 2, self.ch[3]) for _ in self.tasks])
+            [att_generator(2 * self.ch[3], self.ch[3] // 2, self.ch[3]) for _ in self.tasks])
         self.att_mask_generator4 = nn.ModuleList(
-            [self.att_generator(2 * self.ch[4], self.ch[4] // 2, self.ch[4]) for _ in self.tasks])
+            [att_generator(2 * self.ch[4], self.ch[4] // 2, self.ch[4]) for _ in self.tasks])
 
         # Define the output layer
         self.output_layer1 = nn.ModuleList(
             [nn.Sequential(conv3x3(self.ch[1], self.ch[2], stride=1), nn.BatchNorm2d(self.ch[2]), nn.ReLU(inplace=True))
              for _ in self.tasks])
 
-        self.output_layer12 = nn.ModuleList(
+        self.output_layer2 = nn.ModuleList(
             [nn.Sequential(conv3x3(self.ch[2], self.ch[3], stride=1), nn.BatchNorm2d(self.ch[3]),
                            nn.ReLU(inplace=True)) for _ in
              self.tasks])
 
-        self.output_layer13 = nn.ModuleList(
+        self.output_layer3 = nn.ModuleList(
             [nn.Sequential(conv3x3(self.ch[3], self.ch[4], stride=1), nn.BatchNorm2d(self.ch[4]),
                            nn.ReLU(inplace=True)) for _ in
              self.tasks])
@@ -154,13 +153,13 @@ class Single_Task_Net(nn.Module):
                     zip(a_1, self.att_mask_generato2)]
         a_2 = [a_2_mask_i * shared_blocks[3] for a_2_mask_i in a_2_mask]
         a_2 = [self.down_sampling(encoder_block(a_2_i)) for a_2_i, encoder_block in
-               zip(a_2, self.output_layer12)]
+               zip(a_2, self.output_layer2)]
 
         a_3_mask = [att_i(torch.cat((shared_blocks[4], a_2_i), dim=1)) for a_2_i, att_i in
                     zip(a_2, self.att_mask_generator3)]
         a_3 = [a_3_mask_i * shared_blocks[5] for a_3_mask_i in a_3_mask]
         a_3 = [self.down_sampling(encoder_block(a_3_i)) for a_3_i, encoder_block in
-               zip(a_3, self.output_layer12)]
+               zip(a_3, self.output_layer3)]
 
         a_4_mask = [att_i(torch.cat((shared_blocks[6], a_3_i), dim=1)) for a_3_i, att_i in
                     zip(a_3, self.att_mask_generator4)]
@@ -177,6 +176,3 @@ class Single_Task_Net(nn.Module):
         else:
             raise ValueError
         return pred1
-
-
-

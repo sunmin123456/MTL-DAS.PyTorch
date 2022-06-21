@@ -4,7 +4,7 @@ from utils import main_process
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Model Training')
-    parser.add_argument('--model', type=str,
+    parser.add_argument('--model', type=str, default='MTL',
                         help='The used model type: MTL, single_event, single_distance, multi_classifier')
     parser.add_argument('--running_mode', type=str, help='running mode: train, test')
     parser.add_argument('--GPU_device', default=True, type=bool, help='Whether to use GPU')
@@ -37,10 +37,6 @@ if __name__ == '__main__':
                  batch_size=args.batch_size,
                  epoch_num=args.epoch_num,
                  dataset_ram=args.dataset_ram,
-                 trainVal_set_striking='./dataset/striking_train',
-                 trainVal_set_excavating='./dataset/excavating_train',
-                 # test_set_striking='./dataset/striking_test',
-                 # test_set_excavating='./dataset/excavating_test',
+                 trainVal_set_striking=args.trainVal_set_striking,
+                 trainVal_set_excavating=args.trainVal_set_excavating
                  )
-
-

@@ -2,10 +2,9 @@ import warnings
 import torch.utils.data
 import torch
 import torch.nn.functional as F
-from torchvision.models import inception_v3, InceptionOutputs
+from torchvision.models import InceptionOutputs
 import torch.nn as nn
 from torchvision.models.inception import InceptionA, InceptionB, InceptionC, InceptionD, InceptionAux, InceptionE
-
 
 
 class BasicConv2d(nn.Module):
@@ -58,7 +57,6 @@ class Multi_Classifier(nn.Module):
         inception_d = inception_blocks[4]
         inception_e = inception_blocks[5]
         inception_aux = inception_blocks[6]
-
 
         self.aux_logits = aux_logits
         self.transform_input = transform_input
@@ -172,8 +170,6 @@ class Multi_Classifier(nn.Module):
             return InceptionOutputs(x, aux)
         else:
             return self.eager_outputs(x, aux)
-
-
 
 # def main(is_test=False, pth_file='',random_state=1,fold_index=2):
 #     note = 'InceptionV3 is_test={}'.format(is_test)  # 直接跑
